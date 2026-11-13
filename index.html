@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Entretenimiento Codex - Validador de Correo Matriz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-image: linear-gradient(rgba(11, 19, 43, 0.8), rgba(11, 19, 43, 0.85)), url('https://tumbaabierta.com/wp-content/uploads/2012/05/wallpaper_hd_avengers-1920x1200_iron_man.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-color: #0b132b;
+        }
+        /* Estilo para aislar el HTML del correo en la vista previa */
+        #emailPreviewContainer {
+            background-color: #ffffff;
+            color: #000000;
+            max-height: 250px;
+            overflow-y: auto;
+            padding: 12px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body class="text-white font-sans antialiased min-h-screen relative overflow-x-hidden flex flex-col justify-between">
+
+    <!-- HEADER -->
+    <header class="relative z-10 flex justify-between items-center px-8 py-6 max-w-7xl mx-auto w-full">
+        <div class="text-xl font-black tracking-wider flex flex-col leading-none">
+            <span class="text-white">WORLD</span>
+            <span class="text-[#ff6600]">ENTRETENIMIENTO</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="cargarPlataformasCloud(true)" class="bg-[#1c2541]/90 hover:bg-[#3a506b] border border-gray-700 text-gray-300 px-3 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1.5 backdrop-blur-sm" title="Sincronizar datos de la nube">
+                🔄 Sincronizar
+            </button>
+            <button onclick="intentarAbrirAdmin()" class="bg-[#1c2541]/90 hover:bg-[#3a506b] border border-gray-700 text-[#ff6600] px-5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 shadow-lg backdrop-blur-sm">
+                <span>🔑</span> Panel Admin
+            </button>
+        </div>
+    </header>
+
+    <!-- WIDGET DE CONSULTA -->
+    <main class="relative z-10 flex flex-col items-center justify-center px-4 my-auto">
+        <div class="w-full max-w-xl bg-[#1c2541]/90 backdrop-blur-md border border-gray-700/80 rounded-2xl p-8 shadow-2xl space-y-6">
+            
+            <div class="text-center border-b border-gray-700 pb-5">
+                <h1 class="text-3xl font-black tracking-tight leading-none text-white">WORLD</h1>
+                <h1 class="text-3xl font-black tracking-tight leading-none text-[#ff6600] mt-1">ENTRETENIMIENTO</h1>
+                <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest font-semibold">Codex — Matriz de Validación</p>
+            </div>
+            
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="text-xs text-gray-400 mb-1 block">Selecciona la plataforma (Asunto):</label>
+                    <select id="selectPlataformaPublica" class="w-full bg-[#0b132b] border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#ff6600]">
+                        <!-- Se llena dinámicamente -->
+                    </select>
+                </div>
+
+                <div>
+                    <label class="text-xs text-gray-400 mb-1 block">Correo del cliente a consultar:</label>
+                    <input type="email" id="inputCorreoPublico" placeholder="cliente@gmail.com" class="w-full bg-[#0b132b] border border-[#ff6600]/50 rounded-xl px-5 py-3 text-center text-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#ff6600]">
+                </div>
+
+                <button onclick="consultarCorreoMatrizReal()" class="w-full bg-[#ff6600] hover:bg-[#e05b00] text-gray-950 font-bold py-3.5 rounded-xl transition shadow-lg text-base mt-2">
+                    Buscar Último Código en Matriz
+                </button>
+            </div>
+
+            <div id="loader-box" class="hidden text-center py-6">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#ff6600] border-t-transparent"></div>
+                <p class="text-xs text-gray-400 mt-2">Buscando código en el sistema...</p>
+            </div>
+
+            <div id="email-checker-message" class="text-left"></div>
+        </div>
+    </main>
+
+    <!-- POPUP DE RESULTADO CON VISTA PREVIA -->
+    <div id="zmc-popup-overlay" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-[#1c2541] border border-[#ff6600]/50 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 relative">
+            <button onclick="cerrarPopup()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg font-bold">✕</button>
+            
+            <div class="flex items-center gap-3 border-b border-gray-700 pb-3">
+                <span class="text-[#ff6600] text-2xl">📩</span>
+                <div>
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider">¡Correo Encontrado en Matriz!</h3>
+                    <p class="text-[11px] text-gray-400">Vista previa del mensaje recibido</p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div class="flex justify-between items-center bg-[#0b132b] p-3 rounded-xl border border-gray-700">
+                    <span class="text-[10px] text-gray-400 uppercase font-bold">Asunto:</span>
+                    <span id="popupAsunto" class="text-xs text-white font-medium"></span>
+                </div>
+
+                <div class="flex justify-between items-center bg-[#0b132b] p-3 rounded-xl border border-gray-700">
+                    <span class="text-[10px] text-[#ff6600] uppercase font-bold">Fecha y Hora:</span>
+                    <span id="popupFecha" class="text-xs text-gray-300 font-mono"></span>
+                </div>
+
+                <!-- Contenedor de Vista Previa HTML del Correo -->
+                <div>
+                    <span class="text-[10px] text-gray-400 uppercase font-bold block mb-1">Vista Previa del Mensaje / Botón:</span>
+                    <div id="emailPreviewContainer">
+                        <!-- Aquí se renderiza el correo original con botones y enlaces -->
+                    </div>
+                </div>
+
+                <div id="codigoExtraidoBox" class="bg-[#0b132b] p-3 rounded-xl border border-[#ff6600]/30 flex justify-between items-center">
+                    <span class="text-[10px] text-gray-400 uppercase font-bold">Código Detectado:</span>
+                    <span id="popupCodigo" class="text-lg font-black text-[#ff6600]"></span>
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button id="btnCopiarPopup" class="flex-1 bg-[#ff6600] hover:bg-[#e05b00] text-gray-950 font-bold py-3 rounded-xl transition text-sm shadow-lg">
+                    Copiar Código
+                </button>
+                <button onclick="cerrarPopup()" class="bg-gray-700 hover:bg-gray-600 text-white font-bold px-5 py-3 rounded-xl transition text-sm">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL LOGIN ADMIN -->
+    <div id="modalLoginAdmin" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-[#1c2541] border border-[#ff6600]/60 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 relative">
+            <button onclick="cerrarLoginAdmin()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg font-bold">✕</button>
+            <div class="text-center pb-2 border-b border-gray-700">
+                <h3 class="text-base font-bold text-[#ff6600] uppercase tracking-wider">Acceso Administrativo</h3>
+                <p class="text-xs text-gray-400 mt-1">Introduce tus credenciales</p>
+            </div>
+            <div class="space-y-3 text-left">
+                <div>
+                    <label class="text-xs text-gray-400 mb-1 block">Correo:</label>
+                    <input type="email" id="inputAdminEmail" placeholder="codigosworld@gmail.com" class="w-full bg-[#0b132b] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#ff6600]">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 mb-1 block">Contraseña:</label>
+                    <input type="password" id="inputAdminPass" placeholder="••••••••" class="w-full bg-[#0b132b] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#ff6600]">
+                </div>
+                <button onclick="verificarCredencialesAdmin()" class="w-full bg-[#ff6600] hover:bg-[#e05b00] text-gray-950 font-bold py-3 rounded-xl transition text-sm shadow-lg mt-2">
+                    Ingresar al Panel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="relative z-10 text-center py-6 text-xs text-gray-400 font-medium">
+        Hecho por World Entretenimiento
+    </footer>
+
+    <!-- PANEL ADMIN -->
+    <div id="vistaAdmin" class="hidden fixed inset-0 bg-[#0b132b] z-50 flex">
+        <aside class="w-64 bg-[#1c2541] border-r border-gray-800 flex flex-col justify-between">
+            <div>
+                <div class="p-6 text-xl font-bold tracking-wider text-[#ff6600] flex items-center gap-2">
+                    WORLD<span class="text-white">CODEX</span>
+                </div>
+                <nav class="mt-6 space-y-1 px-4 text-sm">
+                    <a href="#" onclick="cambiarSeccionAdmin('plataformas')" id="navPlataformas" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-[#3a506b] text-white font-medium">Plataformas y Asuntos</a>
+                    <a href="#" onclick="cerrarAdmin()" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-[#3a506b] hover:text-white transition">← Volver al sitio público</a>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-gray-800">
+                <button onclick="cerrarAdmin()" class="w-full flex items-center gap-2 px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition text-sm">Cerrar Sesión</button>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col min-w-0 overflow-y-auto p-8 space-y-6">
+            <div id="seccionAdminPlataformas" class="space-y-6">
+                <header class="flex justify-between items-center bg-[#1c2541] p-4 rounded-xl border border-gray-800">
+                    <div>
+                        <h1 class="text-lg font-bold text-[#ff6600]">Gestión de Plataformas y Asuntos</h1>
+                        <p class="text-xs text-gray-400">Sincronizado globalmente en la nube</p>
+                    </div>
+                    <button onclick="abrirNuevaPlataforma()" class="bg-[#ff6600] hover:bg-[#e05b00] text-gray-950 font-bold px-4 py-2 rounded-lg text-sm transition">
+                        + Nueva Plataforma
+                    </button>
+                </header>
+
+                <div id="seccionTablaPlataformas" class="bg-[#1c2541] rounded-xl border border-gray-800 overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-800 text-xs uppercase text-gray-400 bg-[#161f36]">
+                                <th class="py-4 px-6">Plataforma</th>
+                                <th class="py-4 px-6">Asuntos Configurados</th>
+                                <th class="py-4 px-6 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaPlataformasBody" class="divide-y divide-gray-800 text-sm"></tbody>
+                    </table>
+                </div>
+
+                <div id="seccionFormPlataforma" class="bg-[#1c2541] p-6 rounded-xl border border-gray-800 space-y-4 hidden">
+                    <h3 id="formTitulo" class="text-lg font-bold text-[#ff6600]">Nueva Plataforma</h3>
+                    <div>
+                        <label class="text-xs text-gray-400">Nombre de la Plataforma *</label>
+                        <input type="text" id="inputNombrePlat" placeholder="Ej: DISNEY+" class="w-full mt-1 bg-[#0b132b] border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-[#ff6600]">
+                    </div>
+                    <div class="flex gap-3 pt-2">
+                        <button onclick="guardarPlataforma()" class="bg-[#ff6600] hover:bg-[#e05b00] text-gray-950 font-bold px-6 py-2 rounded-lg transition text-sm">Guardar</button>
+                        <button onclick="cancelarEdicion()" class="bg-gray-700 hover:bg-gray-600 px-5 py-2 rounded-lg transition text-sm">Cancelar</button>
+                    </div>
+
+                    <div id="contenedorAsuntosAdmin" class="pt-4 border-t border-gray-700 space-y-3 hidden">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-sm text-white">Asuntos de esta plataforma</h4>
+                            <button onclick="mostrarInputAsunto()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition">+ Agregar Asunto</button>
+                        </div>
+                        <div id="formAgregarAsunto" class="hidden flex gap-2 pt-1">
+                            <input type="text" id="inputNuevoAsunto" placeholder="Ej: Restablece tu contraseña de Spotify" class="flex-1 bg-[#0b132b] border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#ff6600]">
+                            <button onclick="guardarAsunto()" class="bg-green-500 hover:bg-green-600 text-gray-950 font-bold px-4 py-1.5 rounded-lg text-xs">Guardar Asunto</button>
+                        </div>
+                        <div id="listaAsuntos" class="space-y-2 pt-1"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- SCRIPT PRINCIPAL -->
+    <script>
+    const WEBHOOK_URL_FIJA = "https://script.google.com/macros/s/AKfycbwq5Jy_xWrTwHozgakTicUo8Kgrp8HKBrHd8Nao9rmqd__r-Gd4q-lwAUwFgIMbrx-J/exec";
+    const ADMIN_CORREO_VALIDO = "codigosworld@gmail.com";
+    const ADMIN_PASS_VALIDO = "World2026*";
+
+    let plataformasData = [];
+    let plataformaEnEdicionId = null;
+
+    function cargarPlataformasCloud(mostrarAlerta = false) {
+        fetch(`${WEBHOOK_URL_FIJA}?action=obtenerPlataformas&t=${Date.now()}`, { method: 'GET', mode: 'cors' })
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    plataformasData = data;
+                    actualizarSelectorPublico();
+                    renderizarTablaPlataformas();
+                    if(mostrarAlerta) alert("¡Datos sincronizados correctamente desde la nube!");
+                }
+            })
+            .catch(err => {
+                console.error("Error cargando:", err);
+                if(mostrarAlerta) alert("Error al sincronizar con la nube.");
+            });
+    }
+
+    function sincronizarPlataformasCloud() {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = WEBHOOK_URL_FIJA;
+        form.target = 'hidden_iframe';
+
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'data';
+        input.value = JSON.stringify({ plataformas: plataformasData });
+
+        form.appendChild(input);
+
+        let iframe = document.getElementById('hidden_iframe');
+        if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.name = 'hidden_iframe';
+            iframe.id = 'hidden_iframe';
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+        actualizarSelectorPublico();
+    }
+
+    function actualizarSelectorPublico() {
+        const select = document.getElementById('selectPlataformaPublica');
+        if(!select) return;
+        select.innerHTML = "";
+        plataformasData.forEach(plat => {
+            plat.asuntos.forEach(asunto => {
+                select.innerHTML += `<option value="${asunto}">${plat.nombre} — (${asunto})</option>`;
+            });
+        });
+    }
+
+    window.onload = () => {
+        cargarPlataformasCloud();
+    };
+
+    function intentarAbrirAdmin() { 
+        document.getElementById('modalLoginAdmin').classList.remove('hidden'); 
+    }
+
+    function cerrarLoginAdmin() { 
+        document.getElementById('modalLoginAdmin').classList.add('hidden'); 
+    }
+
+    function verificarCredencialesAdmin() {
+        const emailIngresado = document.getElementById('inputAdminEmail').value.trim().toLowerCase();
+        const passIngresada = document.getElementById('inputAdminPass').value.trim();
+
+        if (emailIngresado === ADMIN_CORREO_VALIDO.toLowerCase() && passIngresada === ADMIN_PASS_VALIDO) {
+            cerrarLoginAdmin();
+            document.getElementById('inputAdminEmail').value = "";
+            document.getElementById('inputAdminPass').value = "";
+            document.getElementById('vistaAdmin').classList.remove('hidden');
+            cargarPlataformasCloud();
+            cambiarSeccionAdmin('plataformas');
+        } else {
+            alert("Acceso denegado. Credenciales incorrectas.");
+        }
+    }
+
+    function consultarCorreoMatrizReal() {
+        const correoCliente = document.getElementById('inputCorreoPublico').value.trim().toLowerCase();
+        const asuntoSeleccionado = document.getElementById('selectPlataformaPublica').value.trim();
+        const loaderBox = document.getElementById('loader-box');
+        const messageBox = document.getElementById('email-checker-message');
+
+        if (!correoCliente) { alert("Ingresa el correo del cliente."); return; }
+        if (!asuntoSeleccionado) { alert("Selecciona un asunto válido."); return; }
+
+        loaderBox.classList.remove('hidden');
+        messageBox.innerHTML = "";
+
+        fetch(`${WEBHOOK_URL_FIJA}?correo=${encodeURIComponent(correoCliente)}&asunto=${encodeURIComponent(asuntoSeleccionado)}`, { method: 'GET', mode: 'cors' })
+            .then(res => res.json())
+            .then(data => {
+                loaderBox.classList.add('hidden');
+                if (data.encontrado) {
+                    abrirPopupResultado({ 
+                        asunto: asuntoSeleccionado, 
+                        codigo: data.codigo, 
+                        htmlContenido: data.htmlContenido || "Sin contenido",
+                        fechaHora: data.fechaHora || new Date().toLocaleString() 
+                    });
+                } else {
+                    messageBox.innerHTML = `<div class='p-4 mt-4 bg-red-500/10 rounded-xl text-red-400 text-xs'>No se encontró ningún correo reciente en la matriz.</div>`;
+                }
+            })
+            .catch(() => {
+                loaderBox.classList.add('hidden');
+                messageBox.innerHTML = `<div class='p-4 mt-4 bg-red-500/10 rounded-xl text-red-400 text-xs text-center'>Error de conexión con Google Apps Script.</div>`;
+            });
+    }
+
+    function abrirPopupResultado(obj) {
+        document.getElementById('popupAsunto').innerText = obj.asunto;
+        document.getElementById('popupFecha').innerText = obj.fechaHora;
+        document.getElementById('popupCodigo').innerText = obj.codigo;
+        
+        // Inyectamos el diseño HTML original del correo en la caja de vista previa
+        document.getElementById('emailPreviewContainer').innerHTML = obj.htmlContenido;
+
+        const btnCopiar = document.getElementById('btnCopiarPopup');
+        btnCopiar.onclick = () => {
+            navigator.clipboard.writeText(obj.codigo);
+            alert(`¡Código ${obj.codigo} copiado al portapapeles!`);
+        };
+
+        document.getElementById('zmc-popup-overlay').classList.remove('hidden');
+    }
+
+    function cerrarPopup() { document.getElementById('zmc-popup-overlay').classList.add('hidden'); }
+    function cerrarAdmin() { document.getElementById('vistaAdmin').classList.add('hidden'); cargarPlataformasCloud(); }
+
+    function cambiarSeccionAdmin(seccion) {
+        document.getElementById('seccionAdminPlataformas').classList.remove('hidden');
+        document.getElementById('seccionFormPlataforma').classList.add('hidden');
+        document.getElementById('seccionTablaPlataformas').classList.remove('hidden');
+        renderizarTablaPlataformas();
+    }
+
+    function renderizarTablaPlataformas() {
+        const tbody = document.getElementById('tablaPlataformasBody');
+        if(!tbody) return;
+        tbody.innerHTML = "";
+        plataformasData.forEach(plat => {
+            tbody.innerHTML += `
+                <tr class="hover:bg-[#222d4a] transition">
+                    <td class="py-4 px-6 font-bold">${plat.nombre}</td>
+                    <td class="py-4 px-6"><span class="bg-blue-900/50 text-blue-300 text-xs px-2.5 py-1 rounded-full border border-blue-700">${plat.asuntos.length} asuntos</span></td>
+                    <td class="py-4 px-6 text-right space-x-2">
+                        <button onclick="editarPlataforma(${plat.id})" class="text-gray-400 hover:text-[#ff6600] transition" title="Editar">✏️</button>
+                        <button onclick="eliminarPlataforma(${plat.id})" class="text-gray-400 hover:text-red-400 transition" title="Eliminar">🗑️</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function abrirNuevaPlataforma() {
+        plataformaEnEdicionId = null;
+        document.getElementById('seccionTablaPlataformas').classList.add('hidden');
+        document.getElementById('seccionFormPlataforma').classList.remove('hidden');
+        document.getElementById('formTitulo').innerText = "Nueva Plataforma";
+        document.getElementById('inputNombrePlat').value = "";
+        document.getElementById('contenedorAsuntosAdmin').classList.add('hidden');
+    }
+
+    function editarPlataforma(id) {
+        plataformaEnEdicionId = id;
+        const plat = plataformasData.find(p => p.id === id);
+        if (!plat) return;
+        document.getElementById('seccionTablaPlataformas').classList.add('hidden');
+        document.getElementById('seccionFormPlataforma').classList.remove('hidden');
+        document.getElementById('formTitulo').innerText = "Editar Plataforma: " + plat.nombre;
+        document.getElementById('inputNombrePlat').value = plat.nombre;
+        document.getElementById('contenedorAsuntosAdmin').classList.remove('hidden');
+        renderizarAsuntosAdmin(plat);
+    }
+
+    function cancelarEdicion() {
+        document.getElementById('seccionFormPlataforma').classList.add('hidden');
+        document.getElementById('seccionTablaPlataformas').classList.remove('hidden');
+        renderizarTablaPlataformas();
+    }
+
+    function guardarPlataforma() {
+        const nombre = document.getElementById('inputNombrePlat').value.trim();
+        if (!nombre) { alert("Ingresa el nombre."); return; }
+
+        if (plataformaEnEdicionId === null) {
+            const nueva = { id: Date.now(), nombre, asuntos: [] };
+            plataformasData.push(nueva);
+            sincronizarPlataformasCloud();
+            editarPlataforma(nueva.id);
+        } else {
+            const plat = plataformasData.find(p => p.id === plataformaEnEdicionId);
+            if (plat) plat.nombre = nombre;
+            sincronizarPlataformasCloud();
+            cancelarEdicion();
+        }
+    }
+
+    function eliminarPlataforma(id) {
+        if (confirm("¿Seguro de eliminar esta plataforma?")) {
+            plataformasData = plataformasData.filter(p => p.id !== id);
+            sincronizarPlataformasCloud();
+            renderizarTablaPlataformas();
+        }
+    }
+
+    function mostrarInputAsunto() { document.getElementById('formAgregarAsunto').classList.remove('hidden'); }
+
+    function guardarAsunto() {
+        const nuevoAsunto = document.getElementById('inputNuevoAsunto').value.trim();
+        if (!nuevoAsunto) return;
+        const plat = plataformasData.find(p => p.id === plataformaEnEdicionId);
+        if (plat) {
+            plat.asuntos.push(nuevoAsunto);
+            sincronizarPlataformasCloud();
+            renderizarAsuntosAdmin(plat);
+            document.getElementById('inputNuevoAsunto').value = "";
+            document.getElementById('formAgregarAsunto').classList.add('hidden');
+        }
+    }
+
+    function eliminarAsuntoAdmin(index) {
+        const plat = plataformasData.find(p => p.id === plataformaEnEdicionId);
+        if (plat) {
+            plat.asuntos.splice(index, 1);
+            sincronizarPlataformasCloud();
+            renderizarAsuntosAdmin(plat);
+        }
+    }
+
+    function renderizarAsuntosAdmin(plat) {
+        const lista = document.getElementById('listaAsuntos');
+        lista.innerHTML = "";
+        if (plat.asuntos.length === 0) { lista.innerHTML = "<p class='text-xs text-gray-500'>No hay asuntos configurados.</p>"; return; }
+        plat.asuntos.forEach((asunto, index) => {
+            lista.innerHTML += `
+                <div class="flex items-center justify-between bg-[#0b132b] p-2.5 rounded-lg border border-gray-800 text-xs">
+                    <span class="text-gray-300">📄 ${asunto}</span>
+                    <button onclick="eliminarAsuntoAdmin(${index})" class="text-red-400 hover:text-red-300 font-bold">🗑️</button>
+                </div>
+            `;
+        });
+    }
+    </script>
+</body>
+</html>
